@@ -42,16 +42,18 @@ export default class HomeScreen extends React.Component {
           <TouchableOpacity onPress={() => this.onSubmit()}>
             <Text>Search</Text>
           </TouchableOpacity>
-          {this.state.images.map((image) => {
-            return (
-              <Image
-                key={image.id}
-                style={{ width: 50, height: 50 }}
-                source={{ uri: image.largeImageURL }}
-                alt="an image"
-              />
-            );
-          })}
+          <View style={styles.imageContainer}>
+            {this.state.images.map((image) => {
+              return (
+                <Image
+                  key={image.id}
+                  style={styles.singleImage}
+                  source={{ uri: image.largeImageURL }}
+                  alt="an image"
+                />
+              );
+            })}
+          </View>
         </ScrollView>
       </View>
     );
@@ -101,6 +103,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  imageContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  singleImage: {
+    height: 100,
+    width: 100,
+    margin: 2,
   },
   developmentModeText: {
     marginBottom: 20,
