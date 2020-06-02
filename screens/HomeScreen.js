@@ -21,15 +21,20 @@ export default class HomeScreen extends React.Component {
     this.state = {
       images: [],
       searchInput: "",
+      error: "",
     };
   }
   async onSubmit() {
     let input = this.state.searchInput;
     input = input.split(" ").join("+");
     const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo`
+      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=30`
     );
-    this.setState({ images: results.data.hits });
+    if (!results.data.total) {
+      this.setState({ error: `We can't find any images of that. :(` });
+    } else {
+      this.setState({ images: results.data.hits, error: "" });
+    }
   }
   render() {
     return (
@@ -39,25 +44,32 @@ export default class HomeScreen extends React.Component {
           contentContainerStyle={styles.contentContainer}
         >
           <TextInput
-            style={{ height: 40, borderColor: "gray", borderWidth: 1 }}
+            style={styles.inputContainer}
             placeholder="Search for an image"
             onChangeText={(value) => this.setState({ searchInput: value })}
           />
-          <TouchableOpacity onPress={() => this.onSubmit()}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => this.onSubmit()}
+          >
             <Text>Search</Text>
           </TouchableOpacity>
-          <View style={styles.imageContainer}>
-            {this.state.images.map((image) => {
-              return (
-                <Image
-                  key={image.id}
-                  style={styles.singleImage}
-                  source={{ uri: image.previewURL }}
-                  alt="an image"
-                />
-              );
-            })}
-          </View>
+          {!this.state.error ? (
+            <View style={styles.imageContainer}>
+              {this.state.images.map((image) => {
+                return (
+                  <Image
+                    key={image.id}
+                    style={styles.singleImage}
+                    source={{ uri: image.previewURL }}
+                    alt="an image"
+                  />
+                );
+              })}
+            </View>
+          ) : (
+            <Text style={styles.button}>{this.state.error}</Text>
+          )}
         </ScrollView>
       </View>
     );
@@ -108,6 +120,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  inputContainer: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    marginLeft: 40,
+    marginRight: 40,
+  },
+  button: {
+    alignSelf: "center",
+    margin: 5,
+  },
   imageContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -127,6 +150,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingTop: 30,
+    justifyContent: "center",
   },
   welcomeContainer: {
     alignItems: "center",
