@@ -18,12 +18,15 @@ import { MonoText } from "../components/StyledText";
 export default class HomeScreen extends React.Component {
   constructor() {
     super();
+    this.state = {
+      images: [],
+    };
   }
   async onSubmit() {
     const results = await axios.get(
       `https://pixabay.com/api/?key=${apiKey}&q=yellow+flowers&image_type=photo`
     );
-    console.log(results);
+    this.setState({ images: results.data.hits });
   }
   render() {
     return (
@@ -39,6 +42,16 @@ export default class HomeScreen extends React.Component {
           <TouchableOpacity onPress={() => this.onSubmit()}>
             <Text>Search</Text>
           </TouchableOpacity>
+          {this.state.images.map((image) => {
+            return (
+              <Image
+                key={image.id}
+                style={{ width: 50, height: 50 }}
+                source={{ uri: image.largeImageURL }}
+                alt="an image"
+              />
+            );
+          })}
         </ScrollView>
       </View>
     );
