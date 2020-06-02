@@ -20,11 +20,14 @@ export default class HomeScreen extends React.Component {
     super();
     this.state = {
       images: [],
+      searchInput: "",
     };
   }
   async onSubmit() {
+    let input = this.state.searchInput;
+    input = input.split(" ").join("+");
     const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=yellow+flowers&image_type=photo`
+      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo`
     );
     this.setState({ images: results.data.hits });
   }
@@ -38,6 +41,7 @@ export default class HomeScreen extends React.Component {
           <TextInput
             style={{ height: 40, borderColor: "gray", borderWidth: 1 }}
             placeholder="Search for an image"
+            onChangeText={(value) => this.setState({ searchInput: value })}
           />
           <TouchableOpacity onPress={() => this.onSubmit()}>
             <Text>Search</Text>
@@ -48,7 +52,7 @@ export default class HomeScreen extends React.Component {
                 <Image
                   key={image.id}
                   style={styles.singleImage}
-                  source={{ uri: image.largeImageURL }}
+                  source={{ uri: image.previewURL }}
                   alt="an image"
                 />
               );
