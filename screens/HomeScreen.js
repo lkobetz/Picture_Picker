@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 
@@ -22,13 +23,17 @@ export default class HomeScreen extends React.Component {
       images: [],
       searchInput: "",
       error: "",
+      width: 0,
+      contentHeight: 0,
+      currentScrollLocation: 0,
+      scrollPositionPercent: 0,
     };
   }
   async onSubmit() {
     let input = this.state.searchInput;
     input = input.split(" ").join("+");
     const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=30`
+      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=100`
     );
     if (!results.data.total) {
       this.setState({ error: `We can't find any images of that. :(` });
@@ -36,10 +41,39 @@ export default class HomeScreen extends React.Component {
       this.setState({ images: results.data.hits, error: "" });
     }
   }
+  onLayout() {
+    const oldWidth = this.state.width;
+    const { width } = Dimensions.get("window");
+    this.setState({ width: width });
+    if (oldWidth !== width && oldWidth !== 0) {
+      let position =
+        (this.state.scrollPositionPercent * this.state.contentHeight) / 100;
+      this.scrollRef.scrollTo({
+        y: position,
+      });
+    }
+  }
+  async handleScroll(event) {
+    await this.setState({
+      currentScrollLocation: event.nativeEvent.contentOffset.y,
+    });
+    let position =
+      (this.state.currentScrollLocation * 100) / this.state.contentHeight;
+    this.setState({ scrollPositionPercent: position });
+  }
   render() {
     return (
       <View style={styles.container}>
         <ScrollView
+          scrollEventThrottle={200}
+          ref={(ref) => {
+            this.scrollRef = ref;
+          }}
+          onScroll={(event) => this.handleScroll(event)}
+          onLayout={() => this.onLayout()}
+          onContentSizeChange={(width, height) =>
+            this.setState({ contentHeight: height })
+          }
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
         >
