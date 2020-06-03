@@ -3,7 +3,7 @@ import { createLogger } from "redux-logger";
 import reducer from "./reducer";
 
 const middleware = applyMiddleware();
-// createLogger({ collapsed: true })
+createLogger({ collapsed: true });
 
 const store = createStore(reducer, middleware);
 

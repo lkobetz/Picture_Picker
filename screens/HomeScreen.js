@@ -2,6 +2,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as React from "react";
 import axios from "axios";
 import apiKey from "../secrets";
+import { connect } from "react-redux";
 import {
   Image,
   Platform,
@@ -12,6 +13,13 @@ import {
   View,
   Dimensions,
 } from "react-native";
+import {
+  setError,
+  setImages,
+  setWindowWidth,
+  setScrollPositionPercent,
+  setContentHeight,
+} from "../store/reducer";
 import { ScrollView } from "react-native-gesture-handler";
 
 import { MonoText } from "../components/StyledText";
@@ -20,12 +28,7 @@ export default class HomeScreen extends React.Component {
   constructor() {
     super();
     this.state = {
-      images: [],
       searchInput: "",
-      error: "",
-      width: 0,
-      contentHeight: 0,
-      scrollPositionPercent: 0,
     };
   }
   async onSubmit() {
@@ -36,21 +39,22 @@ export default class HomeScreen extends React.Component {
       `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=100`
     );
     if (!results.data.total) {
-      this.setState({ error: `We can't find any images of that. :(` });
+      this.props.setError(`We can't find any images of that. :(`);
     } else {
-      this.setState({ images: results.data.hits, error: "" });
+      this.props.setError(``);
+      this.props.setImages(results.data.hits);
     }
   }
   onLayout() {
-    const oldWidth = this.state.width;
+    const oldWidth = this.props.width;
     const { width } = Dimensions.get("window");
     // set the current width of the window so we can use it to compare in the future
-    this.setState({ width: width });
+    this.props.setWindowWidth(width);
     // if the previous width is different from the current width, the device's orientation has changed
     if (oldWidth !== width && oldWidth !== 0) {
       // in that case, use the percentage of the content we left off at to calculate the y-coordinate under the new orientation, and scroll there.
       let position =
-        (this.state.scrollPositionPercent * this.state.contentHeight) / 100;
+        (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
       this.scrollRef.scrollTo({
         y: position,
         animated: false,
@@ -61,8 +65,8 @@ export default class HomeScreen extends React.Component {
     // get y-coordinate of current location
     let currentScrollLocation = event.nativeEvent.contentOffset.y;
     // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
-    let position = (currentScrollLocation * 100) / this.state.contentHeight;
-    this.setState({ scrollPositionPercent: position });
+    let position = (currentScrollLocation * 100) / this.props.contentHeight;
+    this.props.setScrollPositionPercent(position);
   }
   render() {
     return (
@@ -75,7 +79,7 @@ export default class HomeScreen extends React.Component {
           onScroll={(event) => this.handleScroll(event)}
           onLayout={() => this.onLayout()}
           onContentSizeChange={(width, height) =>
-            this.setState({ contentHeight: height })
+            this.props.setContentHeight(height)
           }
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
@@ -91,9 +95,9 @@ export default class HomeScreen extends React.Component {
           >
             <Text>Search</Text>
           </TouchableOpacity>
-          {!this.state.error ? (
+          {!this.props.error ? (
             <View style={styles.imageContainer}>
-              {this.state.images.map((image) => {
+              {this.props.images.map((image) => {
                 return (
                   <Image
                     key={image.id}
@@ -105,7 +109,7 @@ export default class HomeScreen extends React.Component {
               })}
             </View>
           ) : (
-            <Text style={styles.button}>{this.state.error}</Text>
+            <Text style={styles.button}>{this.props.error}</Text>
           )}
         </ScrollView>
       </View>
@@ -117,40 +121,25 @@ HomeScreen.navigationOptions = {
   header: null,
 };
 
-function DevelopmentModeNotice() {
-  if (__DEV__) {
-    const learnMoreButton = (
-      <Text onPress={handleLearnMorePress} style={styles.helpLinkText}>
-        Learn more
-      </Text>
-    );
+const mapStateToProps = (state) => ({
+  images: state.images,
+  searchInput: state.searchInput,
+  error: state.error,
+  width: state.width,
+  contentHeight: state.contentHeight,
+  scrollPositionPercent: state.scrollPositionPercent,
+});
 
-    return (
-      <Text style={styles.developmentModeText}>
-        Development mode is enabled: your app will be slower but you can use
-        useful development tools. {learnMoreButton}
-      </Text>
-    );
-  } else {
-    return (
-      <Text style={styles.developmentModeText}>
-        You are not in development mode: your app will run at full speed.
-      </Text>
-    );
-  }
-}
+const mapDispatchToProps = (dispatch) => ({
+  setError: (message) => dispatch(setError(message)),
+  setImages: (images) => dispatch(setImages(images)),
+  setWindowWidth: (width) => dispatch(setWindowWidth(width)),
+  setScrollPositionPercent: (position) =>
+    dispatch(setScrollPositionPercent(position)),
+  setContentHeight: (height) => dispatch(setContentHeight(height)),
+});
 
-function handleLearnMorePress() {
-  WebBrowser.openBrowserAsync(
-    "https://docs.expo.io/versions/latest/workflow/development-mode/"
-  );
-}
-
-function handleHelpPress() {
-  WebBrowser.openBrowserAsync(
-    "https://docs.expo.io/versions/latest/get-started/create-a-new-app/#making-your-first-change"
-  );
-}
+module.exports = connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
 
 const styles = StyleSheet.create({
   container: {
