@@ -25,12 +25,12 @@ export default class HomeScreen extends React.Component {
       error: "",
       width: 0,
       contentHeight: 0,
-      currentScrollLocation: 0,
       scrollPositionPercent: 0,
     };
   }
   async onSubmit() {
     let input = this.state.searchInput;
+    // reformat the input string to use in URL
     input = input.split(" ").join("+");
     const results = await axios.get(
       `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=100`
@@ -44,21 +44,24 @@ export default class HomeScreen extends React.Component {
   onLayout() {
     const oldWidth = this.state.width;
     const { width } = Dimensions.get("window");
+    // set the current width of the window so we can use it to compare in the future
     this.setState({ width: width });
+    // if the previous width is different from the current width, the device's orientation has changed
     if (oldWidth !== width && oldWidth !== 0) {
+      // in that case, use the percentage of the content we left off at to calculate the y-coordinate under the new orientation, and scroll there.
       let position =
         (this.state.scrollPositionPercent * this.state.contentHeight) / 100;
       this.scrollRef.scrollTo({
         y: position,
+        animated: false,
       });
     }
   }
   async handleScroll(event) {
-    await this.setState({
-      currentScrollLocation: event.nativeEvent.contentOffset.y,
-    });
-    let position =
-      (this.state.currentScrollLocation * 100) / this.state.contentHeight;
+    // get y-coordinate of current location
+    let currentScrollLocation = event.nativeEvent.contentOffset.y;
+    // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
+    let position = (currentScrollLocation * 100) / this.state.contentHeight;
     this.setState({ scrollPositionPercent: position });
   }
   render() {
