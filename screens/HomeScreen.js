@@ -12,106 +12,111 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  FlatList,
 } from "react-native";
 import {
   setError,
   setImages,
+  newSearch,
   setWindowWidth,
   setScrollPositionPercent,
   setContentHeight,
 } from "../store/reducer";
-import { ScrollView } from "react-native-gesture-handler";
-
-import { MonoText } from "../components/StyledText";
 
 export default class HomeScreen extends React.Component {
   constructor() {
     super();
     this.state = {
       searchInput: "",
+      page: 1,
+      input: "",
     };
   }
   async onSubmit() {
+    this.props.newSearch();
+    this.setState({ page: 1 });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
     input = input.split(" ").join("+");
-    const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${input}&image_type=photo&per_page=100`
-    );
-    if (!results.data.total) {
+    await this.setState({ input: input });
+    let results = await this.callApi();
+    if (!results.total) {
       this.props.setError(`We can't find any images of that. :(`);
     } else {
       this.props.setError(``);
-      this.props.setImages(results.data.hits);
+      this.props.setImages(results.hits);
     }
+    console.log("total number of results:", results.total);
   }
-  onLayout() {
-    const oldWidth = this.props.width;
-    const { width } = Dimensions.get("window");
-    // set the current width of the window so we can use it to compare in the future
-    this.props.setWindowWidth(width);
-    // if the previous width is different from the current width, the device's orientation has changed
-    if (oldWidth !== width && oldWidth !== 0) {
-      // in that case, use the percentage of the content we left off at to calculate the y-coordinate under the new orientation, and scroll there.
-      let position =
-        (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
-      this.scrollRef.scrollTo({
-        y: position,
-        animated: false,
-      });
+  async callApi() {
+    console.log(this.state.input, this.state.page);
+    const results = await axios.get(
+      `https://pixabay.com/api/?key=${apiKey}&q=${this.state.input}&image_type=photo&page=${this.state.page}&per_page=50`
+    );
+    return results.data;
+  }
+  // onLayout() {
+  //   const oldWidth = this.props.width;
+  //   const { width } = Dimensions.get("window");
+  //   // set the current width of the window so we can use it to compare in the future
+  //   this.props.setWindowWidth(width);
+  //   // if the previous width is different from the current width, the device's orientation has changed
+  //   if (oldWidth !== width && oldWidth !== 0) {
+  //     // in that case, use the percentage of the content we left off at to calculate the y-coordinate under the new orientation, and scroll there.
+  //     let position =
+  //       (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
+  //     this.scrollRef.scrollTo({
+  //       y: position,
+  //       animated: false,
+  //     });
+  //   }
+  // }
+  // async handleScroll(event) {
+  //   // get y-coordinate of current location
+  //   let currentScrollLocation = event.nativeEvent.contentOffset.y;
+  //   // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
+  //   let position = (currentScrollLocation * 100) / this.props.contentHeight;
+  //   this.props.setScrollPositionPercent(position);
+  // }
+  async loadMore() {
+    this.setState((prevState) => ({ page: prevState.page + 1 }));
+    const results = await this.callApi();
+    if (results.hits) {
+      this.props.setImages(results.hits);
     }
-  }
-  async handleScroll(event) {
-    // get y-coordinate of current location
-    let currentScrollLocation = event.nativeEvent.contentOffset.y;
-    // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
-    let position = (currentScrollLocation * 100) / this.props.contentHeight;
-    this.props.setScrollPositionPercent(position);
   }
   render() {
     return (
       <View style={styles.container}>
-        <ScrollView
-          scrollEventThrottle={200}
-          ref={(ref) => {
-            this.scrollRef = ref;
-          }}
-          onScroll={(event) => this.handleScroll(event)}
-          onLayout={() => this.onLayout()}
-          onContentSizeChange={(width, height) =>
-            this.props.setContentHeight(height)
-          }
-          style={styles.container}
-          contentContainerStyle={styles.contentContainer}
-        >
-          <TextInput
-            style={styles.inputContainer}
-            placeholder="Search for an image"
-            onChangeText={(value) => this.setState({ searchInput: value })}
-          />
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => this.onSubmit()}
-          >
-            <Text>Search</Text>
-          </TouchableOpacity>
-          {!this.props.error ? (
-            <View style={styles.imageContainer}>
-              {this.props.images.map((image) => {
-                return (
-                  <Image
-                    key={image.id}
-                    style={styles.singleImage}
-                    source={{ uri: image.previewURL }}
-                    alt="an image"
-                  />
-                );
-              })}
-            </View>
-          ) : (
-            <Text style={styles.button}>{this.props.error}</Text>
-          )}
-        </ScrollView>
+        <TextInput
+          style={styles.inputContainer}
+          placeholder="Search for an image"
+          onChangeText={(value) => this.setState({ searchInput: value })}
+        />
+        <TouchableOpacity style={styles.button} onPress={() => this.onSubmit()}>
+          <Text>Search</Text>
+        </TouchableOpacity>
+        {!this.props.error && this.props.images.length ? (
+          <FlatList
+            horizontal={false}
+            numColumns={3}
+            data={this.props.images}
+            onEndReached={() => this.loadMore()}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity onPress={() => console.log("item idx:", index)}>
+                <Image
+                  style={styles.singleImage}
+                  source={{ uri: item.previewURL }}
+                  alt="an image"
+                />
+              </TouchableOpacity>
+            )}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.imageContainer}
+          ></FlatList>
+        ) : (
+          <Text>{this.props.error}</Text>
+        )}
       </View>
     );
   }
@@ -133,6 +138,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
+  newSearch: () => dispatch(newSearch()),
   setWindowWidth: (width) => dispatch(setWindowWidth(width)),
   setScrollPositionPercent: (position) =>
     dispatch(setScrollPositionPercent(position)),
@@ -158,9 +164,7 @@ const styles = StyleSheet.create({
     margin: 5,
   },
   imageContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    alignItems: "center",
   },
   singleImage: {
     height: 100,

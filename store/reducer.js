@@ -2,6 +2,7 @@
 
 const SET_ERROR = "SET_ERROR";
 const SET_IMAGES = "SET_IMAGES";
+const NEW_SEARCH = "NEW_SEARCH";
 const SET_WINDOW_WIDTH = "SET_WINDOW_WIDTH";
 const SET_SCROLL_POSITION_PERCENT = "SET_SCROLL_POSITION_PERCENT";
 const SET_CONTENT_HEIGHT = "SET_CONTENT_HEIGHT";
@@ -19,6 +20,12 @@ export const setImages = (images) => {
   return {
     type: SET_IMAGES,
     images,
+  };
+};
+
+export const newSearch = () => {
+  return {
+    type: NEW_SEARCH,
   };
 };
 
@@ -63,7 +70,12 @@ export default function reducer(state = initialState, action) {
     case SET_IMAGES:
       return {
         ...state,
-        images: action.images,
+        images: [...state.images, ...action.images],
+      };
+    case NEW_SEARCH:
+      return {
+        ...state,
+        images: [],
       };
     case SET_WINDOW_WIDTH:
       return {
