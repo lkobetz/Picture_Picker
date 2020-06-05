@@ -31,6 +31,7 @@ export default class HomeScreen extends React.Component {
       page: 1,
       input: "",
       columns: Math.floor(Dimensions.get("window").width / 100),
+      scrollGoalPercent: 0,
     };
   }
   async onSubmit() {
@@ -57,30 +58,43 @@ export default class HomeScreen extends React.Component {
     console.log("search complete");
     return results.data;
   }
-  onLayout() {
+  async onLayout() {
     console.log("on layout called");
     const oldWidth = this.props.width;
     const { width } = Dimensions.get("window");
     this.props.setWindowWidth(width);
     if (oldWidth !== width) {
-      console.log("old:", oldWidth, "new:", width);
-      const num = Math.floor(width / 100);
-      this.setState({ columns: num });
-    }
-    this.autoScroll();
-  }
-  autoScroll() {
-    if (this.props.scrollPositionPercent) {
-      let position =
-        (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
+      // resetting the goal every time the widtch changes causes it to incrementally increase
+      console.log("set scroll Goal:", this.props.scrollPositionPercent);
       console.log(
-        "should autoscroll to:",
-        this.props.scrollPositionPercent,
-        position
+        "old:",
+        oldWidth,
+        "new:",
+        width,
+        "contentHeight:",
+        this.props.contentHeight
+      );
+      const num = Math.floor(width / 100);
+      await this.setState({
+        columns: num,
+        scrollGoalPercent: this.props.scrollPositionPercent,
+      });
+    }
+  }
+  autoScroll(contentHeight) {
+    if (this.state.scrollGoalPercent) {
+      let position = (this.state.scrollGoalPercent * contentHeight) / 100;
+      console.log(
+        "scrolling to position",
+        position,
+        "scrollGoalPercent:",
+        this.state.scrollGoalPercent,
+        "contentHeight:",
+        this.props.contentHeight
       );
       this.flatList.scrollToOffset({
         offset: position,
-        animated: true,
+        animated: false,
       });
     }
   }
@@ -94,7 +108,9 @@ export default class HomeScreen extends React.Component {
     console.log(
       "actually scrolled to:",
       this.props.scrollPositionPercent,
-      currentScrollLocation
+      currentScrollLocation,
+      "contentHeight:",
+      this.props.contentHeight
     );
   }
   async loadMore() {
@@ -127,7 +143,9 @@ export default class HomeScreen extends React.Component {
             data={this.props.images}
             onScroll={(event) => this.handleScroll(event)}
             onContentSizeChange={(contentWidth, contentHeight) =>
-              this.props.setContentHeight(contentHeight)
+              Promise.resolve(this.props.setContentHeight(contentHeight)).then(
+                this.autoScroll(contentHeight)
+              )
             }
             onEndReached={() => this.loadMore()}
             renderItem={({ item, index }) => (
