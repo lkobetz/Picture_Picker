@@ -8,6 +8,7 @@ import store from "./store/index";
 import useCachedResources from "./hooks/useCachedResources";
 import BottomTabNavigator from "./navigation/BottomTabNavigator";
 import LinkingConfiguration from "./navigation/LinkingConfiguration";
+import SingleImage from "./screens/SingleImage";
 
 const Stack = createStackNavigator();
 
@@ -24,6 +25,7 @@ export default function App(props) {
           <NavigationContainer linking={LinkingConfiguration}>
             <Stack.Navigator>
               <Stack.Screen name="Root" component={BottomTabNavigator} />
+              <Stack.Screen name="SingleImage" component={SingleImage} />
             </Stack.Navigator>
           </NavigationContainer>
         </View>

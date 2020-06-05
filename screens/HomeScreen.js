@@ -123,7 +123,11 @@ export default class HomeScreen extends React.Component {
             onScroll={(event) => this.handleScroll(event)}
             onEndReached={() => this.loadMore()}
             renderItem={({ item, index }) => (
-              <TouchableOpacity onPress={() => console.log("item idx:", index)}>
+              <TouchableOpacity
+                onPress={() =>
+                  this.props.navigation.navigate("SingleImage", { item: item })
+                }
+              >
                 <Image
                   key={item.id}
                   style={styles.singleImage}
