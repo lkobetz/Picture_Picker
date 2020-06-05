@@ -10,9 +10,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Dimensions,
+  SafeAreaView,
   FlatList,
+  Dimensions,
 } from "react-native";
 import {
   setError,
@@ -30,10 +30,11 @@ export default class HomeScreen extends React.Component {
       searchInput: "",
       page: 1,
       input: "",
+      columns: Math.floor(Dimensions.get("window").width / 100),
     };
   }
   async onSubmit() {
-    this.props.newSearch();
+    await this.props.newSearch();
     this.setState({ page: 1 });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
@@ -41,45 +42,63 @@ export default class HomeScreen extends React.Component {
     await this.setState({ input: input });
     let results = await this.callApi();
     if (!results.total) {
-      this.props.setError(`We can't find any images of that. :(`);
+      this.props.setError(
+        `Sorry, we couldn't find any images of ${this.state.input}.`
+      );
     } else {
       this.props.setError(``);
       this.props.setImages(results.hits);
     }
-    console.log("total number of results:", results.total);
   }
   async callApi() {
-    console.log(this.state.input, this.state.page);
     const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${this.state.input}&image_type=photo&page=${this.state.page}&per_page=50`
+      `https://pixabay.com/api/?key=${apiKey}&q=${this.state.input}&image_type=photo&page=${this.state.page}&per_page=30`
     );
+    console.log("search complete");
     return results.data;
   }
-  // onLayout() {
-  //   const oldWidth = this.props.width;
-  //   const { width } = Dimensions.get("window");
-  //   // set the current width of the window so we can use it to compare in the future
-  //   this.props.setWindowWidth(width);
-  //   // if the previous width is different from the current width, the device's orientation has changed
-  //   if (oldWidth !== width && oldWidth !== 0) {
-  //     // in that case, use the percentage of the content we left off at to calculate the y-coordinate under the new orientation, and scroll there.
-  //     let position =
-  //       (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
-  //     this.scrollRef.scrollTo({
-  //       y: position,
-  //       animated: false,
-  //     });
-  //   }
-  // }
-  // async handleScroll(event) {
-  //   // get y-coordinate of current location
-  //   let currentScrollLocation = event.nativeEvent.contentOffset.y;
-  //   // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
-  //   let position = (currentScrollLocation * 100) / this.props.contentHeight;
-  //   this.props.setScrollPositionPercent(position);
-  // }
+  onLayout() {
+    console.log("on layout called");
+    const oldWidth = this.props.width;
+    const { width } = Dimensions.get("window");
+    this.props.setWindowWidth(width);
+    if (oldWidth !== width) {
+      console.log("old:", oldWidth, "new:", width);
+      const num = Math.floor(width / 100);
+      this.setState({ columns: num });
+    }
+    this.autoScroll();
+  }
+  autoScroll() {
+    if (this.props.scrollPositionPercent) {
+      let position =
+        (this.props.scrollPositionPercent * this.props.contentHeight) / 100;
+      console.log(
+        "should autoscroll to:",
+        this.props.scrollPositionPercent,
+        position
+      );
+      this.flatList.scrollToOffset({
+        offset: position,
+        animated: true,
+      });
+    }
+  }
+
+  async handleScroll(event) {
+    // get y-coordinate of current location
+    let currentScrollLocation = event.nativeEvent.contentOffset.y;
+    // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
+    let position = (currentScrollLocation * 100) / this.props.contentHeight;
+    await this.props.setScrollPositionPercent(position);
+    console.log(
+      "actually scrolled to:",
+      this.props.scrollPositionPercent,
+      currentScrollLocation
+    );
+  }
   async loadMore() {
-    this.setState((prevState) => ({ page: prevState.page + 1 }));
+    await this.setState((prevState) => ({ page: prevState.page + 1 }));
     const results = await this.callApi();
     if (results.hits) {
       this.props.setImages(results.hits);
@@ -87,7 +106,7 @@ export default class HomeScreen extends React.Component {
   }
   render() {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <TextInput
           style={styles.inputContainer}
           placeholder="Search for an image"
@@ -98,26 +117,36 @@ export default class HomeScreen extends React.Component {
         </TouchableOpacity>
         {!this.props.error && this.props.images.length ? (
           <FlatList
+            onLayout={() => this.onLayout()}
+            ref={(ref) => {
+              this.flatList = ref;
+            }}
             horizontal={false}
-            numColumns={3}
+            numColumns={this.state.columns}
+            key={this.state.columns}
             data={this.props.images}
+            onScroll={(event) => this.handleScroll(event)}
+            onContentSizeChange={(contentWidth, contentHeight) =>
+              this.props.setContentHeight(contentHeight)
+            }
             onEndReached={() => this.loadMore()}
             renderItem={({ item, index }) => (
               <TouchableOpacity onPress={() => console.log("item idx:", index)}>
                 <Image
+                  key={item.id}
                   style={styles.singleImage}
                   source={{ uri: item.previewURL }}
                   alt="an image"
                 />
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.imageContainer}
           ></FlatList>
         ) : (
-          <Text>{this.props.error}</Text>
+          <Text style={styles.button}>{this.props.error}</Text>
         )}
-      </View>
+      </SafeAreaView>
     );
   }
 }
@@ -151,6 +180,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    padding: 10,
   },
   inputContainer: {
     height: 40,
