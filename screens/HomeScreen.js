@@ -19,7 +19,7 @@ import {
   setImages,
   newSearch,
   setWindowWidth,
-  setScrollPositionPercent,
+  setScrollRow,
   setContentHeight,
 } from "../store/reducer";
 
@@ -31,11 +31,13 @@ export default class HomeScreen extends React.Component {
       page: 1,
       input: "",
       columns: Math.floor(Dimensions.get("window").width / 100),
-      scrollGoalPercent: 0,
+      scrollGoalRow: 0,
     };
   }
   async onSubmit() {
     await this.props.newSearch();
+    // these two state changes need to be included in newSearch
+    this.setState({ scrollGoalRow: 0 });
     this.setState({ page: 1 });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
@@ -55,63 +57,40 @@ export default class HomeScreen extends React.Component {
     const results = await axios.get(
       `https://pixabay.com/api/?key=${apiKey}&q=${this.state.input}&image_type=photo&page=${this.state.page}&per_page=30`
     );
-    console.log("search complete");
     return results.data;
   }
   async onLayout() {
-    console.log("on layout called");
     const oldWidth = this.props.width;
     const { width } = Dimensions.get("window");
     this.props.setWindowWidth(width);
     if (oldWidth !== width) {
-      // resetting the goal every time the widtch changes causes it to incrementally increase
-      console.log("set scroll Goal:", this.props.scrollPositionPercent);
-      console.log(
-        "old:",
-        oldWidth,
-        "new:",
-        width,
-        "contentHeight:",
-        this.props.contentHeight
+      // resetting the goal every time the width changes causes it to incrementally increase
+      let prevColumns = this.state.columns;
+      const cols = Math.floor(width / 100);
+      let rowToScrollTo = Math.floor(
+        (this.props.scrollRow * prevColumns) / cols
       );
-      const num = Math.floor(width / 100);
       await this.setState({
-        columns: num,
-        scrollGoalPercent: this.props.scrollPositionPercent,
+        columns: cols,
+        scrollGoalRow: rowToScrollTo,
       });
     }
+    this.autoScroll();
   }
-  autoScroll(contentHeight) {
-    if (this.state.scrollGoalPercent) {
-      let position = (this.state.scrollGoalPercent * contentHeight) / 100;
-      console.log(
-        "scrolling to position",
-        position,
-        "scrollGoalPercent:",
-        this.state.scrollGoalPercent,
-        "contentHeight:",
-        this.props.contentHeight
-      );
-      this.flatList.scrollToOffset({
-        offset: position,
+  autoScroll() {
+    if (this.state.scrollGoalRow) {
+      this.flatList.scrollToIndex({
+        index: this.state.scrollGoalRow,
         animated: false,
       });
     }
   }
-
   async handleScroll(event) {
     // get y-coordinate of current location
     let currentScrollLocation = event.nativeEvent.contentOffset.y;
-    // this sets the % of the content that the user has currently scrolled to on the state so that we can scroll to that same percentage on orientation change
-    let position = (currentScrollLocation * 100) / this.props.contentHeight;
-    await this.props.setScrollPositionPercent(position);
-    console.log(
-      "actually scrolled to:",
-      this.props.scrollPositionPercent,
-      currentScrollLocation,
-      "contentHeight:",
-      this.props.contentHeight
-    );
+    // this sets the row of the content that the user has currently scrolled to on the state so that we can scroll to that same Rowage on orientation change
+    let row = Math.floor(currentScrollLocation / 100);
+    await this.props.setScrollRow(row);
   }
   async loadMore() {
     await this.setState((prevState) => ({ page: prevState.page + 1 }));
@@ -142,11 +121,6 @@ export default class HomeScreen extends React.Component {
             key={this.state.columns}
             data={this.props.images}
             onScroll={(event) => this.handleScroll(event)}
-            onContentSizeChange={(contentWidth, contentHeight) =>
-              Promise.resolve(this.props.setContentHeight(contentHeight)).then(
-                this.autoScroll(contentHeight)
-              )
-            }
             onEndReached={() => this.loadMore()}
             renderItem={({ item, index }) => (
               <TouchableOpacity onPress={() => console.log("item idx:", index)}>
@@ -158,7 +132,12 @@ export default class HomeScreen extends React.Component {
                 />
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => String(item.id)}
+            getItemLayout={(data, index) => ({
+              length: 100,
+              offset: 100 * index,
+              index,
+            })}
+            keyExtractor={(item, index) => String(index)}
             contentContainerStyle={styles.imageContainer}
           ></FlatList>
         ) : (
@@ -179,7 +158,7 @@ const mapStateToProps = (state) => ({
   error: state.error,
   width: state.width,
   contentHeight: state.contentHeight,
-  scrollPositionPercent: state.scrollPositionPercent,
+  scrollRow: state.scrollRow,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -187,8 +166,7 @@ const mapDispatchToProps = (dispatch) => ({
   setImages: (images) => dispatch(setImages(images)),
   newSearch: () => dispatch(newSearch()),
   setWindowWidth: (width) => dispatch(setWindowWidth(width)),
-  setScrollPositionPercent: (position) =>
-    dispatch(setScrollPositionPercent(position)),
+  setScrollRow: (position) => dispatch(setScrollRow(position)),
   setContentHeight: (height) => dispatch(setContentHeight(height)),
 });
 

@@ -4,7 +4,7 @@ const SET_ERROR = "SET_ERROR";
 const SET_IMAGES = "SET_IMAGES";
 const NEW_SEARCH = "NEW_SEARCH";
 const SET_WINDOW_WIDTH = "SET_WINDOW_WIDTH";
-const SET_SCROLL_POSITION_PERCENT = "SET_SCROLL_POSITION_PERCENT";
+const SET_SCROLL_ROW = "SET_SCROLL_ROW";
 const SET_CONTENT_HEIGHT = "SET_CONTENT_HEIGHT";
 
 // action creators:
@@ -36,9 +36,9 @@ export const setWindowWidth = (newWidth) => {
   };
 };
 
-export const setScrollPositionPercent = (newPosition) => {
+export const setScrollRow = (newPosition) => {
   return {
-    type: SET_SCROLL_POSITION_PERCENT,
+    type: SET_SCROLL_ROW,
     newPosition,
   };
 };
@@ -55,7 +55,7 @@ const initialState = {
   error: "",
   width: 0,
   contentHeight: 0,
-  scrollPositionPercent: 0,
+  scrollRow: 0,
 };
 
 // reducer:
@@ -82,10 +82,10 @@ export default function reducer(state = initialState, action) {
         ...state,
         width: action.newWidth,
       };
-    case SET_SCROLL_POSITION_PERCENT:
+    case SET_SCROLL_ROW:
       return {
         ...state,
-        scrollPositionPercent: action.newPosition,
+        scrollRow: action.newPosition,
       };
     case SET_CONTENT_HEIGHT:
       return {
