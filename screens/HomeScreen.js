@@ -15,12 +15,15 @@ import {
   Dimensions,
 } from "react-native";
 import {
+  setInput,
   setError,
   setImages,
   newSearch,
   setWindowWidth,
   setScrollRow,
-  setContentHeight,
+  incrementPage,
+  setColumns,
+  setScrollRowGoal,
 } from "../store/reducer";
 
 export default class HomeScreen extends React.Component {
@@ -28,25 +31,27 @@ export default class HomeScreen extends React.Component {
     super();
     this.state = {
       searchInput: "",
-      page: 1,
-      input: "",
-      columns: Math.floor(Dimensions.get("window").width / 100),
-      scrollGoalRow: 0,
+      // page: 1,
+      // input: "",
+      // columns: Math.floor(Dimensions.get("window").width / 100),
+      // scrollGoalRow: 0,
     };
   }
   async onSubmit() {
     await this.props.newSearch();
-    // these two state changes need to be included in newSearch
-    this.setState({ scrollGoalRow: 0 });
-    this.setState({ page: 1 });
+    // these two state changes need to be included in newSearch, also sets error to false
+    // this.setState({ scrollGoalRow: 0 });
+    // this.setState({ page: 1 });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
     input = input.split(" ").join("+");
-    await this.setState({ input: input });
+    // action: setInput
+    await this.props.setInput(input);
     let results = await this.callApi();
+    console.log(results.total);
     if (!results.total) {
       this.props.setError(
-        `Sorry, we couldn't find any images of ${this.state.input}.`
+        `Sorry, we couldn't find any images of ${this.state.searchInput}.`
       );
     } else {
       this.props.setError(``);
@@ -55,7 +60,7 @@ export default class HomeScreen extends React.Component {
   }
   async callApi() {
     const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${this.state.input}&image_type=photo&page=${this.state.page}&per_page=30`
+      `https://pixabay.com/api/?key=${apiKey}&q=${this.props.input}&image_type=photo&page=${this.props.page}&per_page=30`
     );
     return results.data;
   }
@@ -65,22 +70,25 @@ export default class HomeScreen extends React.Component {
     this.props.setWindowWidth(width);
     if (oldWidth !== width) {
       // resetting the goal every time the width changes causes it to incrementally increase
-      let prevColumns = this.state.columns;
+      let prevColumns = this.props.columns;
       const cols = Math.floor(width / 100);
       let rowToScrollTo = Math.floor(
         (this.props.scrollRow * prevColumns) / cols
       );
-      await this.setState({
-        columns: cols,
-        scrollGoalRow: rowToScrollTo,
-      });
+      // action: setColumns, setScrollRowGoal
+      this.props.setColumns(cols);
+      this.props.setScrollRowGoal(rowToScrollTo);
+      // await this.setState({
+      //   columns: cols,
+      //   scrollGoalRow: rowToScrollTo,
+      // });
     }
     this.autoScroll();
   }
   autoScroll() {
-    if (this.state.scrollGoalRow) {
+    if (this.props.scrollGoalRow) {
       this.flatList.scrollToIndex({
-        index: this.state.scrollGoalRow,
+        index: this.props.scrollGoalRow,
         animated: false,
       });
     }
@@ -93,7 +101,8 @@ export default class HomeScreen extends React.Component {
     await this.props.setScrollRow(row);
   }
   async loadMore() {
-    await this.setState((prevState) => ({ page: prevState.page + 1 }));
+    // action: incrementPage
+    await this.props.incrementPage();
     const results = await this.callApi();
     if (results.hits) {
       this.props.setImages(results.hits);
@@ -106,10 +115,8 @@ export default class HomeScreen extends React.Component {
           style={styles.inputContainer}
           placeholder="Search for an image"
           onChangeText={(value) => this.setState({ searchInput: value })}
+          onKeyPress={() => this.onSubmit()}
         />
-        <TouchableOpacity style={styles.button} onPress={() => this.onSubmit()}>
-          <Text>Search</Text>
-        </TouchableOpacity>
         {!this.props.error && this.props.images.length ? (
           <FlatList
             onLayout={() => this.onLayout()}
@@ -117,8 +124,8 @@ export default class HomeScreen extends React.Component {
               this.flatList = ref;
             }}
             horizontal={false}
-            numColumns={this.state.columns}
-            key={this.state.columns}
+            numColumns={this.props.columns}
+            key={this.props.columns}
             data={this.props.images}
             onScroll={(event) => this.handleScroll(event)}
             onEndReached={() => this.loadMore()}
@@ -157,21 +164,26 @@ HomeScreen.navigationOptions = {
 };
 
 const mapStateToProps = (state) => ({
+  input: state.input,
   images: state.images,
-  searchInput: state.searchInput,
   error: state.error,
   width: state.width,
-  contentHeight: state.contentHeight,
   scrollRow: state.scrollRow,
+  columns: state.columns,
+  pages: state.pages,
+  scrollRowGoal: state.scrollRowGoal,
 });
 
 const mapDispatchToProps = (dispatch) => ({
+  setInput: (input) => dispatch(setInput(input)),
   setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
   newSearch: () => dispatch(newSearch()),
   setWindowWidth: (width) => dispatch(setWindowWidth(width)),
   setScrollRow: (position) => dispatch(setScrollRow(position)),
-  setContentHeight: (height) => dispatch(setContentHeight(height)),
+  incrementPage: () => dispatch(incrementPage()),
+  setColumns: (columns) => dispatch(setColumns(columns)),
+  setScrollRowGoal: (row) => dispatch(setScrollRowGoal(row)),
 });
 
 module.exports = connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
@@ -188,6 +200,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginLeft: 40,
     marginRight: 40,
+    marginVertical: 10,
   },
   button: {
     alignSelf: "center",
