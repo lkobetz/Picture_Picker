@@ -1,23 +1,15 @@
 // actions:
 
-const SET_INPUT = "SET_INPUT";
 const SET_ERROR = "SET_ERROR";
 const SET_IMAGES = "SET_IMAGES";
 const NEW_SEARCH = "NEW_SEARCH";
-const SET_WINDOW_WIDTH = "SET_WINDOW_WIDTH";
+const SET_WINDOW_DIMENSIONS = "SET_WINDOW_DIMENSIONS";
 const SET_SCROLL_ROW = "SET_SCROLL_ROW";
 const INCREMENT_PAGE = "INCREMENT_PAGE";
 const SET_COLUMNS = "SET_COLUMNS";
 const SET_SCROLL_ROW_GOAL = "SET_SCROLL_ROW_GOAL";
 
 // action creators:
-
-export const setInput = (input) => {
-  return {
-    type: SET_INPUT,
-    input,
-  };
-};
 
 export const setError = (message) => {
   return {
@@ -39,10 +31,10 @@ export const newSearch = () => {
   };
 };
 
-export const setWindowWidth = (newWidth) => {
+export const setWindowDimensions = (dimensions) => {
   return {
-    type: SET_WINDOW_WIDTH,
-    newWidth,
+    type: SET_WINDOW_DIMENSIONS,
+    dimensions,
   };
 };
 
@@ -50,13 +42,6 @@ export const setScrollRow = (newPosition) => {
   return {
     type: SET_SCROLL_ROW,
     newPosition,
-  };
-};
-
-export const setContentHeight = (newHeight) => {
-  return {
-    type: SET_CONTENT_HEIGHT,
-    newHeight,
   };
 };
 
@@ -84,10 +69,10 @@ const initialState = {
   images: [],
   error: "",
   width: 0,
+  height: 0,
   scrollRow: 0,
   page: 1,
-  input: "",
-  columns: 0,
+  columns: 1,
   scrollRowGoal: 0,
 };
 
@@ -95,11 +80,6 @@ const initialState = {
 
 export default function reducer(state = initialState, action) {
   switch (action.type) {
-    case SET_INPUT:
-      return {
-        ...state,
-        input: action.input,
-      };
     case SET_ERROR:
       return {
         ...state,
@@ -113,15 +93,17 @@ export default function reducer(state = initialState, action) {
     case NEW_SEARCH:
       return {
         ...state,
+        input: "",
         images: [],
         scrollGoalRow: 0,
         page: 1,
         error: "",
       };
-    case SET_WINDOW_WIDTH:
+    case SET_WINDOW_DIMENSIONS:
       return {
         ...state,
-        width: action.newWidth,
+        width: action.dimensions.width,
+        height: action.dimensions.height,
       };
     case SET_SCROLL_ROW:
       return {
