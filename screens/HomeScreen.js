@@ -3,18 +3,17 @@ import * as React from "react";
 import axios from "axios";
 import apiKey from "../secrets";
 import { connect } from "react-redux";
+import ImageComponent from "../components/ImageComponent";
 import {
-  Image,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   SafeAreaView,
   FlatList,
   Dimensions,
 } from "react-native";
 import {
+  setTotal,
   setError,
   setImages,
   newSearch,
@@ -30,16 +29,27 @@ export default class HomeScreen extends React.Component {
     super();
     this.state = {
       searchInput: "",
+      perPage: 30,
+      allImagesLoaded: false,
     };
   }
   async callApi() {
-    const results = await axios.get(
-      `https://pixabay.com/api/?key=${apiKey}&q=${this.state.searchInput}&image_type=photo&page=${this.props.page}&per_page=20`
-    );
-    return results.data;
+    let results = [];
+    try {
+      results = await axios.get(
+        `https://pixabay.com/api/?key=${apiKey}&q=${this.state.searchInput}&image_type=photo&page=${this.props.page}&per_page=${this.state.perPage}`
+      );
+      return results.data;
+    } catch (err) {
+      if (err.request) {
+        console.log(err.request.response);
+      }
+    }
+    return results;
   }
   async onSubmit() {
     this.props.newSearch();
+    this.setState({ perPage: 30, allImagesLoaded: false });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
     input = input.split(" ").join("+");
@@ -49,16 +59,31 @@ export default class HomeScreen extends React.Component {
         `Sorry, we couldn't find any images of ${this.state.searchInput}.`
       );
     } else {
+      this.props.setTotal(results.total);
       this.props.setError(``);
       this.props.setImages(results.hits);
     }
   }
   async loadMore() {
-    // await prevents calling the api twice on the same page
-    await this.props.incrementPage();
-    const results = await this.callApi();
-    if (results.hits) {
-      this.props.setImages(results.hits);
+    if (!this.state.allImagesLoaded) {
+      const totalSoFar = this.props.page * this.state.perPage;
+      let results = {};
+      // condition checks if the page is within range/exists to prevent 400 error from API call
+      if (totalSoFar <= this.props.total) {
+        // await prevents calling the api twice on the same page
+        await this.props.incrementPage();
+        results = await this.callApi();
+      } else {
+        let oldPerPage = this.state.perPage;
+        await this.setState({
+          perPage: this.props.total - (totalSoFar - oldPerPage),
+        });
+        results = await this.callApi();
+        this.setState({ allImagesLoaded: true });
+      }
+      if (results.hits) {
+        this.props.setImages(results.hits);
+      }
     }
   }
   handleScroll(event) {
@@ -116,20 +141,7 @@ export default class HomeScreen extends React.Component {
             data={this.props.images}
             onScroll={(event) => this.handleScroll(event)}
             onEndReached={() => this.loadMore()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() =>
-                  this.props.navigation.navigate("SingleImage", { item: item })
-                }
-              >
-                <Image
-                  key={item.id}
-                  style={styles.singleImage}
-                  source={{ uri: item.previewURL }}
-                  alt="an image"
-                />
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => <ImageComponent item={item} />}
             getItemLayout={(data, index) => ({
               length: 100,
               offset: 100 * index,
@@ -151,6 +163,7 @@ HomeScreen.navigationOptions = {
 };
 
 const mapStateToProps = (state) => ({
+  total: state.total,
   images: state.images,
   error: state.error,
   width: state.width,
@@ -161,6 +174,7 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch) => ({
+  setTotal: (total) => dispatch(setTotal(total)),
   setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
   newSearch: () => dispatch(newSearch()),
@@ -194,10 +208,5 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     alignItems: "center",
-  },
-  singleImage: {
-    height: 100,
-    width: 100,
-    margin: 2,
   },
 });

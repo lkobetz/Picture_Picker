@@ -1,5 +1,6 @@
 // actions:
 
+const SET_TOTAL = "SET_TOTAL";
 const SET_ERROR = "SET_ERROR";
 const SET_IMAGES = "SET_IMAGES";
 const NEW_SEARCH = "NEW_SEARCH";
@@ -10,6 +11,13 @@ const SET_COLUMNS = "SET_COLUMNS";
 const SET_SCROLL_ROW_GOAL = "SET_SCROLL_ROW_GOAL";
 
 // action creators:
+
+export const setTotal = (total) => {
+  return {
+    type: SET_TOTAL,
+    total,
+  };
+};
 
 export const setError = (message) => {
   return {
@@ -66,6 +74,7 @@ export const setScrollRowGoal = (row) => {
 };
 
 const initialState = {
+  total: 0,
   images: [],
   error: "",
   width: 0,
@@ -80,6 +89,11 @@ const initialState = {
 
 export default function reducer(state = initialState, action) {
   switch (action.type) {
+    case SET_TOTAL:
+      return {
+        ...state,
+        total: action.total,
+      };
     case SET_ERROR:
       return {
         ...state,
@@ -93,9 +107,10 @@ export default function reducer(state = initialState, action) {
     case NEW_SEARCH:
       return {
         ...state,
+        total: 0,
         input: "",
         images: [],
-        scrollGoalRow: 0,
+        scrollRowGoal: 0,
         page: 1,
         error: "",
       };
