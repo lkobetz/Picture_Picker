@@ -1,5 +1,6 @@
 // actions:
 
+const SET_PER_PAGE = "SET_PER_PAGE";
 const SET_TOTAL = "SET_TOTAL";
 const SET_ERROR = "SET_ERROR";
 const SET_IMAGES = "SET_IMAGES";
@@ -12,6 +13,13 @@ const SET_SCROLL_ROW_GOAL = "SET_SCROLL_ROW_GOAL";
 const FINISHED_LOADING_IMAGES = "FINISHED_LOADING_IMAGES";
 
 // action creators:
+
+export const setPerPage = (num) => {
+  return {
+    type: SET_PER_PAGE,
+    num,
+  };
+};
 
 export const setTotal = (total) => {
   return {
@@ -91,12 +99,18 @@ const initialState = {
   columns: 1,
   scrollRowGoal: 0,
   allImagesLoaded: false,
+  perPage: 30,
 };
 
 // reducer:
 
 export default function reducer(state = initialState, action) {
   switch (action.type) {
+    case SET_PER_PAGE:
+      return {
+        ...state,
+        perPage: action.num,
+      };
     case SET_TOTAL:
       return {
         ...state,
@@ -116,8 +130,9 @@ export default function reducer(state = initialState, action) {
       return {
         ...state,
         total: 0,
-        input: "",
+        perPage: 30,
         images: [],
+        scrollRow: 0,
         scrollRowGoal: 0,
         page: 1,
         error: "",

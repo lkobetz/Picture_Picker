@@ -17,7 +17,7 @@ export default function SingleImage(props) {
         <Text style={styles.text}>User: {image.user}</Text>
         <Text style={styles.text}>Tags: {image.tags}</Text>
         <Text style={styles.text}>
-          Resolution: {image.imageWidth} x {image.imageHeight}
+          Resolution: {image.imageWidth}x{image.imageHeight}
         </Text>
       </View>
     </SafeAreaView>
