@@ -11,6 +11,8 @@ import {
   SafeAreaView,
   FlatList,
   Dimensions,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
   setTotal,
@@ -22,6 +24,7 @@ import {
   incrementPage,
   setColumns,
   setScrollRowGoal,
+  finishedLoadingImages,
 } from "../store/reducer";
 
 export default class HomeScreen extends React.Component {
@@ -30,8 +33,12 @@ export default class HomeScreen extends React.Component {
     this.state = {
       searchInput: "",
       perPage: 30,
-      allImagesLoaded: false,
     };
+    this.loadMore = this.loadMore.bind(this);
+    this.onLayout = this.onLayout.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+    this.debouncedLoadMore = this.debouncedLoadMore.bind(this);
+    this.renderItem = this.renderItem.bind(this);
   }
   async callApi() {
     let results = [];
@@ -42,47 +49,68 @@ export default class HomeScreen extends React.Component {
       return results.data;
     } catch (err) {
       if (err.request) {
-        console.log(err.request.response);
+        console.log(this.props.page, err.request);
       }
     }
     return results;
   }
   async onSubmit() {
-    this.props.newSearch();
-    this.setState({ perPage: 30, allImagesLoaded: false });
+    // await prevents api call before state is cleared
+    await this.props.newSearch();
+    this.setState({ perPage: 30 });
     let input = this.state.searchInput;
     // reformat the input string to use in URL
     input = input.split(" ").join("+");
     let results = await this.callApi();
-    if (!results.total) {
+    if (!results.totalHits) {
       this.props.setError(
         `Sorry, we couldn't find any images of ${this.state.searchInput}.`
       );
     } else {
-      this.props.setTotal(results.total);
+      this.props.setTotal(results.totalHits);
       this.props.setError(``);
       this.props.setImages(results.hits);
     }
   }
+  debounce(fn, ms) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        fn.apply(this, args);
+      }, ms);
+    };
+  }
+  debouncedLoadMore() {
+    const debounced = this.debounce(this.loadMore, 300);
+    return debounced();
+  }
   async loadMore() {
-    if (!this.state.allImagesLoaded) {
+    // only load more if we haven't reached the end of all images
+    if (!this.props.allImagesLoaded) {
       const totalSoFar = this.props.page * this.state.perPage;
       let results = {};
-      // condition checks if the page is within range/exists to prevent 400 error from API call
-      if (totalSoFar <= this.props.total) {
-        // await prevents calling the api twice on the same page
-        await this.props.incrementPage();
-        results = await this.callApi();
-      } else {
-        let oldPerPage = this.state.perPage;
-        await this.setState({
-          perPage: this.props.total - (totalSoFar - oldPerPage),
-        });
-        results = await this.callApi();
-        this.setState({ allImagesLoaded: true });
-      }
-      if (results.hits) {
-        this.props.setImages(results.hits);
+      // condition prevents page from incrementing if images array hasn't caught up
+      if (totalSoFar <= this.props.images.length) {
+        // condition checks if the page is within range/exists in order to make a valid axios request
+        if (totalSoFar <= this.props.total) {
+          // await prevents calling the api twice on the same page
+          await this.props.incrementPage();
+          results = await this.callApi();
+        } else {
+          // reset number per page to the number of images that remain to be loaded
+          let oldPerPage = this.state.perPage;
+          await this.setState({
+            perPage: this.props.total - (totalSoFar - oldPerPage),
+          });
+          results = await this.callApi();
+          // we've reached the last image, so set allImagesLoaded to true
+          await this.props.finishedLoadingImages();
+        }
+        if (results.hits) {
+          await this.props.setImages(results.hits);
+        }
       }
     }
   }
@@ -120,18 +148,26 @@ export default class HomeScreen extends React.Component {
       });
     }
   }
+  renderItem({ item }) {
+    return <ImageComponent item={item} navigation={this.props.navigation} />;
+  }
   render() {
     return (
       <SafeAreaView style={styles.container}>
-        <TextInput
-          style={styles.inputContainer}
-          placeholder="Search for an image..."
-          onChangeText={(value) => this.setState({ searchInput: value })}
-          onEndEditing={() => this.onSubmit()}
-        />
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.inputContainer}
+            placeholder="Search for an image..."
+            onChangeText={(value) => this.setState({ searchInput: value })}
+            onEndEditing={this.onSubmit}
+          />
+          <TouchableOpacity style={styles.button} onPress={this.onSubmit}>
+            <Text>Search</Text>
+          </TouchableOpacity>
+        </View>
         {!this.props.error && this.props.images.length ? (
           <FlatList
-            onLayout={() => this.onLayout()}
+            onLayout={this.onLayout}
             ref={(ref) => {
               this.flatList = ref;
             }}
@@ -140,8 +176,9 @@ export default class HomeScreen extends React.Component {
             key={this.props.columns}
             data={this.props.images}
             onScroll={(event) => this.handleScroll(event)}
-            onEndReached={() => this.loadMore()}
-            renderItem={({ item }) => <ImageComponent item={item} />}
+            onEndReached={this.loadMore}
+            onEndReachedThreshold={0.5}
+            renderItem={this.renderItem}
             getItemLayout={(data, index) => ({
               length: 100,
               offset: 100 * index,
@@ -151,7 +188,7 @@ export default class HomeScreen extends React.Component {
             contentContainerStyle={styles.imageContainer}
           ></FlatList>
         ) : (
-          <Text style={styles.button}>{this.props.error}</Text>
+          <Text style={styles.error}>{this.props.error}</Text>
         )}
       </SafeAreaView>
     );
@@ -171,6 +208,7 @@ const mapStateToProps = (state) => ({
   columns: state.columns,
   page: state.page,
   scrollRowGoal: state.scrollRowGoal,
+  allImagesLoaded: state.allImagesLoaded,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -184,6 +222,7 @@ const mapDispatchToProps = (dispatch) => ({
   incrementPage: () => dispatch(incrementPage()),
   setColumns: (columns) => dispatch(setColumns(columns)),
   setScrollRowGoal: (row) => dispatch(setScrollRowGoal(row)),
+  finishedLoadingImages: () => dispatch(finishedLoadingImages()),
 });
 
 module.exports = connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
@@ -194,17 +233,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 10,
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   inputContainer: {
     height: 40,
+    width: Dimensions.get("window").width / 1.7,
     borderColor: "gray",
     borderWidth: 1,
-    marginLeft: 40,
-    marginRight: 40,
+    marginHorizontal: 10,
     marginVertical: 10,
   },
   button: {
     alignSelf: "center",
-    margin: 5,
+    padding: 5,
+    backgroundColor: "lightgray",
+    marginHorizontal: 10,
+  },
+  error: {
+    alignSelf: "center",
   },
   imageContainer: {
     alignItems: "center",

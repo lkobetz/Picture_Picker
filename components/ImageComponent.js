@@ -1,9 +1,12 @@
 import React from "react";
 import { Image, TouchableOpacity, StyleSheet } from "react-native";
 
-export default class ImageComponent extends React.PureComponent {
+export default class ImageComponent extends React.Component {
   constructor(props) {
     super(props);
+  }
+  shouldComponentUpdate() {
+    return false;
   }
   render() {
     return (

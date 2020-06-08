@@ -9,6 +9,7 @@ const SET_SCROLL_ROW = "SET_SCROLL_ROW";
 const INCREMENT_PAGE = "INCREMENT_PAGE";
 const SET_COLUMNS = "SET_COLUMNS";
 const SET_SCROLL_ROW_GOAL = "SET_SCROLL_ROW_GOAL";
+const FINISHED_LOADING_IMAGES = "FINISHED_LOADING_IMAGES";
 
 // action creators:
 
@@ -73,6 +74,12 @@ export const setScrollRowGoal = (row) => {
   };
 };
 
+export const finishedLoadingImages = () => {
+  return {
+    type: FINISHED_LOADING_IMAGES,
+  };
+};
+
 const initialState = {
   total: 0,
   images: [],
@@ -83,6 +90,7 @@ const initialState = {
   page: 1,
   columns: 1,
   scrollRowGoal: 0,
+  allImagesLoaded: false,
 };
 
 // reducer:
@@ -113,6 +121,7 @@ export default function reducer(state = initialState, action) {
         scrollRowGoal: 0,
         page: 1,
         error: "",
+        allImagesLoaded: false,
       };
     case SET_WINDOW_DIMENSIONS:
       return {
@@ -139,6 +148,11 @@ export default function reducer(state = initialState, action) {
       return {
         ...state,
         scrollRowGoal: action.row,
+      };
+    case FINISHED_LOADING_IMAGES:
+      return {
+        ...state,
+        allImagesLoaded: true,
       };
     default:
       return state;
