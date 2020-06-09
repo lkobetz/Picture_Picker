@@ -20,6 +20,6 @@ Next, clone this repo on your device, open it, and find the `secrets_example.js`
 Change the name to `secrets.js`.
 Then, replace `API_KEY_HERE` with your API key from Pixabay.
 Run `npm install` in the command line to install any necessary dependencies. Then, run `npm start`. 
-Scan the QR code when it appears to run the app on your mobile device, or type `a` or `i` to use a simulator.
+When the QR code appears, scan it in your expo app to run the app on your mobile device, or type `a` or `i` to use a simulator.
 
 When the app opens, an input box and search button will appear. Happy searching!
