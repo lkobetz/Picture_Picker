@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { setTotal, setError, setImages, newSearch } from "../store/actions";
-import { callApi } from "../api/funcs";
+import { callApi } from "../api/call";
 
 export default class HomeScreen extends React.Component {
   constructor() {
@@ -30,7 +30,6 @@ export default class HomeScreen extends React.Component {
     return results;
   }
   async onSubmit() {
-    // await prevents api call before state is cleared
     await this.props.newSearch();
     let results = await this.callApi();
     if (!results.totalHits) {

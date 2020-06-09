@@ -1,7 +1,7 @@
 import React from "react";
 import { FlatList, StyleSheet, Dimensions } from "react-native";
 import ImageComponent from "../components/ImageComponent";
-import { callApi } from "../api/funcs";
+import { callApi } from "../api/call";
 import { connect } from "react-redux";
 import {
   setImages,
@@ -17,6 +17,7 @@ import {
 export default class AllImages extends React.Component {
   constructor() {
     super();
+    this.flatList = React.createRef();
     this.onLayout = this.onLayout.bind(this);
     this.renderItem = this.renderItem.bind(this);
     this.getItemLayout = this.getItemLayout.bind(this);
@@ -39,7 +40,7 @@ export default class AllImages extends React.Component {
     // if this condition is true, device orientation has changed
     if (oldWidth !== width) {
       const prevColumns = this.props.columns;
-      // calculate new number of columns based on width
+      // calculate new number of columns based on new width
       const cols = Math.floor(width / 100);
       // calculate row to autoscroll to based on current scrollRow and new number of columns
       const rowToScrollTo = Math.floor(
@@ -55,7 +56,7 @@ export default class AllImages extends React.Component {
   }
   autoScroll() {
     if (this.props.scrollRowGoal) {
-      this.flatList.scrollToIndex({
+      this.flatList.current.scrollToIndex({
         index: this.props.scrollRowGoal,
         animated: false,
       });
@@ -64,7 +65,7 @@ export default class AllImages extends React.Component {
   async handleScroll(event) {
     // get y-coordinate of current location
     const currentScrollLocation = event.nativeEvent.contentOffset.y;
-    // set the row that the user has currently scrolled to on the state so that we can scroll to that same row on orientation change
+    // set the row that the user has currently scrolled to on the state in order to scroll to it on orientation change
     const row = Math.floor(currentScrollLocation / 100);
     await this.props.setScrollRow(row);
   }
@@ -77,25 +78,21 @@ export default class AllImages extends React.Component {
     return results;
   }
   async loadMore() {
-    // only load more if we haven't reached the end of all images
     if (!this.props.allImagesLoaded) {
-      // const totalSoFar = this.props.page * this.props.perPage;
       let results = {};
-      // condition checks if the page is within range/exists in order to make a valid axios request
+      // condition checks if the following page doesn't have fewer than the designated number of images per page...
       if (
         this.props.total - this.props.images.length >=
         this.props.perPage * 2
       ) {
-        // await prevents calling the api twice on the same page
         await this.props.incrementPage();
         results = await this.callApi();
+        /// ...if the following page has fewer images, combine the last two pages into one api call and stop loading more.
       } else {
-        // reset number per page to the number of images that remain to be loaded
         let newPerPage = this.props.total - this.props.images.length;
         await this.props.incrementPage();
         await this.props.setPerPage(newPerPage);
         results = await this.callApi();
-        // we've reached the last image, so set allImagesLoaded to true
         await this.props.finishedLoadingImages();
       }
       if (results.hits) {
@@ -107,9 +104,7 @@ export default class AllImages extends React.Component {
     return (
       <FlatList
         onLayout={this.onLayout}
-        ref={(ref) => {
-          this.flatList = ref;
-        }}
+        ref={this.flatList}
         horizontal={false}
         numColumns={this.props.columns}
         key={this.props.columns}

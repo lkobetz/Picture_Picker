@@ -4,6 +4,7 @@ import { connect } from "react-redux";
 
 export default function SingleImage(props) {
   const image = props.route.params.item;
+  console.log(props.height);
   return (
     <SafeAreaView style={styles.container}>
       <Image

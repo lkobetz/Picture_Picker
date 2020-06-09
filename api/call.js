@@ -10,7 +10,7 @@ export const callApi = async (input, page, perPage) => {
     return results.data;
   } catch (err) {
     if (err.request) {
-      console.log(err.request);
+      console.log(err.request.response);
     }
   }
   return results;
