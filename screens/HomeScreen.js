@@ -1,4 +1,3 @@
-import * as WebBrowser from "expo-web-browser";
 import * as React from "react";
 import { connect } from "react-redux";
 import AllImages from "../components/AllImages";
@@ -11,19 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  setTotal,
-  setError,
-  setImages,
-  newSearch,
-  setWindowDimensions,
-  setScrollRow,
-  incrementPage,
-  setPerPage,
-  setColumns,
-  setScrollRowGoal,
-  finishedLoadingImages,
-} from "../store/reducer";
+import { setTotal, setError, setImages, newSearch } from "../store/actions";
 import { callApi } from "../api/funcs";
 
 export default class HomeScreen extends React.Component {
@@ -85,15 +72,9 @@ export default class HomeScreen extends React.Component {
 
 const mapStateToProps = (state) => ({
   perPage: state.perPage,
-  total: state.total,
   images: state.images,
   error: state.error,
-  width: state.width,
-  scrollRow: state.scrollRow,
-  columns: state.columns,
   page: state.page,
-  scrollRowGoal: state.scrollRowGoal,
-  allImagesLoaded: state.allImagesLoaded,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -101,13 +82,6 @@ const mapDispatchToProps = (dispatch) => ({
   setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
   newSearch: () => dispatch(newSearch()),
-  // setWindowDimensions: (dimensions) =>
-  //   dispatch(setWindowDimensions(dimensions)),
-  // setScrollRow: (position) => dispatch(setScrollRow(position)),
-  // incrementPage: () => dispatch(incrementPage()),
-  // setColumns: (columns) => dispatch(setColumns(columns)),
-  // setScrollRowGoal: (row) => dispatch(setScrollRowGoal(row)),
-  // finishedLoadingImages: () => dispatch(finishedLoadingImages()),
 });
 
 module.exports = connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

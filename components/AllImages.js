@@ -4,9 +4,7 @@ import ImageComponent from "../components/ImageComponent";
 import { callApi } from "../api/funcs";
 import { connect } from "react-redux";
 import {
-  setError,
   setImages,
-  newSearch,
   setWindowDimensions,
   setScrollRow,
   incrementPage,
@@ -14,7 +12,7 @@ import {
   setColumns,
   setScrollRowGoal,
   finishedLoadingImages,
-} from "../store/reducer";
+} from "../store/actions";
 
 export default class AllImages extends React.Component {
   constructor() {
@@ -134,7 +132,6 @@ const mapStateToProps = (state, ownProps) => ({
   total: state.total,
   perPage: state.perPage,
   images: state.images,
-  error: state.error,
   width: state.width,
   scrollRow: state.scrollRow,
   columns: state.columns,
@@ -145,9 +142,7 @@ const mapStateToProps = (state, ownProps) => ({
 
 const mapDispatchToProps = (dispatch) => ({
   setPerPage: (num) => dispatch(setPerPage(num)),
-  setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
-  newSearch: () => dispatch(newSearch()),
   setWindowDimensions: (dimensions) =>
     dispatch(setWindowDimensions(dimensions)),
   setScrollRow: (position) => dispatch(setScrollRow(position)),

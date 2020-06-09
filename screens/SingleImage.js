@@ -8,7 +8,7 @@ export default function SingleImage(props) {
     <SafeAreaView style={styles.container}>
       <Image
         key={image.id}
-        style={{ height: props.height / 1.5 }}
+        style={{ height: props.height / 2 }}
         source={{ uri: image.largeImageURL }}
         alt="an image"
         resizeMode="contain"
