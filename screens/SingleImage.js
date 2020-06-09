@@ -13,7 +13,7 @@ export default function SingleImage(props) {
         alt="an image"
         resizeMode="contain"
       />
-      <View style={{ flexDirection: "column" }}>
+      <View style={styles.info}>
         <Text style={styles.text}>User: {image.user}</Text>
         <Text style={styles.text}>Tags: {image.tags}</Text>
         <Text style={styles.text}>
@@ -35,6 +35,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+  },
+  info: {
+    flexDirection: "column",
   },
   text: {
     fontSize: 20,
