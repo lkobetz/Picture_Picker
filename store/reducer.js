@@ -25,7 +25,7 @@ const initialState = {
   columns: 1,
   scrollRowGoal: 0,
   allImagesLoaded: false,
-  perPage: 30,
+  perPage: 50,
 };
 
 // reducer:

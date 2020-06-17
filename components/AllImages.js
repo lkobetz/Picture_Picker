@@ -13,6 +13,7 @@ import {
   setScrollRowGoal,
   finishedLoadingImages,
 } from "../store/actions";
+import _throttle from "lodash.throttle";
 
 export default class AllImages extends React.Component {
   constructor() {
@@ -25,6 +26,10 @@ export default class AllImages extends React.Component {
     this.renderItem = this.renderItem.bind(this);
     this.getItemLayout = this.getItemLayout.bind(this);
     this.loadMore = this.loadMore.bind(this);
+    this.throttledLoadMore = _throttle(this.loadMore, 300, {
+      leading: false,
+      trailing: true,
+    });
   }
   renderItem({ item, index }) {
     return <ImageComponent item={item} navigation={this.props.navigation} />;
@@ -121,11 +126,16 @@ export default class AllImages extends React.Component {
         this.setState({ noCall: false });
         this.props.setPerPage(newPerPage);
         results = await this.callApi();
-        this.props.finishedLoadingImages();
+        if (results && results.hits) {
+          this.props.setImages(results.hits);
+          console.log("final total:", this.props.images.length);
+          this.props.finishedLoadingImages();
+        }
       }
       if (results && results.hits) {
         this.setState({ noCall: true });
         this.props.setImages(results.hits);
+        console.log("all images loaded?", this.props.allImagesLoaded);
       }
     }
     console.log(
@@ -147,7 +157,7 @@ export default class AllImages extends React.Component {
         key={this.props.columns}
         data={this.props.images}
         onScroll={(event) => this.handleScroll(event)}
-        onEndReached={this.loadMore}
+        onEndReached={this.throttledLoadMore}
         onEndReachedThreshold={0.5}
         renderItem={this.renderItem}
         getItemLayout={this.getItemLayout}
