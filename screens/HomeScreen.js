@@ -10,7 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { setTotal, setError, setImages, newSearch } from "../store/actions";
+import {
+  setTotal,
+  setError,
+  setImages,
+  newSearch,
+  incrementPage,
+} from "../store/actions";
 import { callApi } from "../api/call";
 
 export default class HomeScreen extends React.Component {
@@ -27,10 +33,11 @@ export default class HomeScreen extends React.Component {
       this.props.page,
       this.props.perPage
     );
+    this.props.incrementPage();
     return results;
   }
   async onSubmit() {
-    await this.props.newSearch();
+    this.props.newSearch();
     let results = await this.callApi();
     if (!results.totalHits) {
       this.props.setError(
@@ -81,6 +88,7 @@ const mapDispatchToProps = (dispatch) => ({
   setError: (message) => dispatch(setError(message)),
   setImages: (images) => dispatch(setImages(images)),
   newSearch: () => dispatch(newSearch()),
+  incrementPage: () => dispatch(incrementPage()),
 });
 
 module.exports = connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

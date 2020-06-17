@@ -11,6 +11,8 @@ export const callApi = async (input, page, perPage) => {
   } catch (err) {
     if (err.request) {
       console.log(err.request.response);
+    } else {
+      console.log(err);
     }
   }
   return results;

@@ -17,6 +17,9 @@ import {
 export default class AllImages extends React.Component {
   constructor() {
     super();
+    this.state = {
+      noCall: true,
+    };
     this.flatList = React.createRef();
     this.onLayout = this.onLayout.bind(this);
     this.renderItem = this.renderItem.bind(this);
@@ -33,7 +36,7 @@ export default class AllImages extends React.Component {
       index,
     };
   }
-  async onLayout() {
+  onLayout() {
     const oldWidth = this.props.width;
     const { width, height } = Dimensions.get("window");
     this.props.setWindowDimensions({ width, height });
@@ -46,12 +49,12 @@ export default class AllImages extends React.Component {
       const rowToScrollTo = Math.floor(
         (this.props.scrollRow * prevColumns) / cols
       );
-      await this.props.setColumns(cols);
-      await this.props.setScrollRowGoal(rowToScrollTo);
+      this.props.setColumns(cols);
+      this.props.setScrollRowGoal(rowToScrollTo);
     }
     // call autoScroll outside the condition because onLayout will be called again after the new column number is set
     if (this.props.scrollRow !== this.props.scrollRowGoal) {
-      await this.autoScroll();
+      this.autoScroll();
     }
   }
   autoScroll() {
@@ -62,20 +65,36 @@ export default class AllImages extends React.Component {
       });
     }
   }
-  async handleScroll(event) {
+  handleScroll(event) {
     // get y-coordinate of current location
     const currentScrollLocation = event.nativeEvent.contentOffset.y;
     // set the row that the user has currently scrolled to on the state in order to scroll to it on orientation change
     const row = Math.floor(currentScrollLocation / 100);
-    await this.props.setScrollRow(row);
+    this.props.setScrollRow(row);
+  }
+  debounce(fn, ms) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        fn.apply(this, args);
+      }, ms);
+    };
+  }
+  debouncedApiCall() {
+    return this.debounce(this.callApi, 100);
   }
   async callApi() {
-    const results = await callApi(
-      this.props.searchInput,
-      this.props.page,
-      this.props.perPage
-    );
-    return results;
+    if (this.state.noCall) {
+      const results = await callApi(
+        this.props.searchInput,
+        this.props.page,
+        this.props.perPage
+      );
+      this.props.incrementPage();
+      return results;
+    }
   }
   async loadMore() {
     if (!this.props.allImagesLoaded) {
@@ -85,20 +104,38 @@ export default class AllImages extends React.Component {
         this.props.total - this.props.images.length >=
         this.props.perPage * 2
       ) {
-        await this.props.incrementPage();
         results = await this.callApi();
         /// ...if the following page has fewer images, combine the last two pages into one api call and stop loading more.
       } else {
+        let unique = {};
+        let images = this.props.images;
+        for (let i = 0; i < images.length; i++) {
+          if (!unique[images[i].id]) {
+            unique[images[i].id] = 1;
+          } else {
+            unique[images[i].id]++;
+            console.log("index:", i, "image:", images[i].largeImageURL);
+          }
+        }
         let newPerPage = this.props.total - this.props.images.length;
-        await this.props.incrementPage();
-        await this.props.setPerPage(newPerPage);
+        this.setState({ noCall: false });
+        this.props.setPerPage(newPerPage);
         results = await this.callApi();
-        await this.props.finishedLoadingImages();
+        this.props.finishedLoadingImages();
       }
-      if (results.hits) {
-        await this.props.setImages(results.hits);
+      if (results && results.hits) {
+        this.setState({ noCall: true });
+        this.props.setImages(results.hits);
       }
     }
+    console.log(
+      "number of images:",
+      this.props.total,
+      "images in array:",
+      this.props.images.length,
+      "page:",
+      this.props.page
+    );
   }
   render() {
     return (
