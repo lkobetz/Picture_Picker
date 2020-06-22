@@ -161,7 +161,7 @@ export default class AllImages extends React.Component {
         onEndReachedThreshold={0.5}
         renderItem={this.renderItem}
         getItemLayout={this.getItemLayout}
-        keyExtractor={(item, index) => String(index)}
+        keyExtractor={(item, index) => String(item.id)}
         contentContainerStyle={styles.imageContainer}
       ></FlatList>
     );

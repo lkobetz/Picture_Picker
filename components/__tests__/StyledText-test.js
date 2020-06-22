@@ -48,3 +48,15 @@ describe("loadMore", () => {
     );
   });
 });
+
+describe("FlatList", () => {
+  const wrapper = mount(<AllImages store={store} />);
+  const FlatList = wrapper.find("FlatList");
+  const key = FlatList.props().keyExtractor({ id: 3 });
+  it("returns the correct key", () => {
+    expect(key).toEqual("3");
+  });
+  it("calls onEndReached when scrolled to end", () => {
+    // ???
+  });
+});
