@@ -1,6 +1,6 @@
 import * as React from "react";
+import { Provider } from "react-redux";
 import store from "../../store/index";
-
 import AllImages from "../AllImages";
 import { JSDOM } from "jsdom";
 import { configure, mount, render, shallow } from "enzyme";
@@ -33,14 +33,9 @@ describe("loadMore", () => {
   });
 });
 
-describe("FlatList", () => {
-  const wrapper = mount(<AllImages store={store} />);
-  const FlatList = wrapper.find("FlatList");
-  const key = FlatList.props().keyExtractor({ id: 3 });
-  it("returns the correct key", () => {
-    expect(key).toEqual("3");
-  });
-  it("calls onEndReached when scrolled to end", () => {
-    // ???
+describe("AllImages", () => {
+  it("returns the component instance", () => {
+    const wrapper = shallow(<AllImages store={store} />);
+    expect(wrapper.dive().dive().instance()).toBeTruthy();
   });
 });

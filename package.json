@@ -9,7 +9,8 @@
     "test": "jest --watchAll"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": ["<rootDir>/components/_tests_/setup.js"]
   },
   "dependencies": {
     "@expo/vector-icons": "~10.0.6",
