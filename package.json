@@ -9,8 +9,7 @@
     "test": "jest --watchAll"
   },
   "jest": {
-    "preset": "jest-expo",
-    "testEnvironment":"jsdom"
+    "preset": "jest-expo"
   },
   "dependencies": {
     "@expo/vector-icons": "~10.0.6",
